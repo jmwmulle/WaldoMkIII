@@ -1,7 +1,7 @@
 __author__ = "Jonathan Mulle"
 
 from os.path import join, isfile
-
+import traceback, sys
 from klibs.KLExceptions import *
 from klibs import P
 
@@ -25,6 +25,7 @@ ANG = "angle"
 NEW = "new"
 OLD = "old"
 RED = [236, 88, 64, 255]
+BLUE = [15, 75, 255, 255]
 WHITE = [255,255,255,255]
 GREY = [125,125,125,255]
 BLACK = [0,0,0,255]
@@ -46,11 +47,12 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 	disc_diameter_deg = 1
 	disc_diameter = None
 	search_disc_proto = None
-	search_disc_color = BLACK
+	penultimate_disc_color = BLUE
+	search_disc_color = RED
 	display_margin = None  # ie. the area in which targets may not be presented
 	allow_intermittent_bg = True
 	fixation_boundary_tolerance = 1.5  # scales boundary (not image) if drift_correct target too small to fixate
-	disc_boundary_tolerance = 1.5  # scales boundary (not image) if drift_correct target too small to fixate
+	disc_boundary_tolerance = 1.25  # scales boundary (not image) if drift_correct target too small to fixate
 	looked_away_msg = None
 	eyes_moved_message = None
 
@@ -96,7 +98,7 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 		r = drift_correct_target().width * self.fixation_boundary_tolerance
 		self.el.add_gaze_boundary(INITIAL_FIXATION, [P.screen_c, r], CIRCLE_BOUNDARY)
 		fill(P.default_fill_color)
-		self.txtm.add_style("msg", 64)
+		self.txtm.add_style("msg", 32, WHITE)
 		self.txtm.add_style("err", 64, WHITE)
 		self.txtm.add_style("disc test", 48, (245,165,5))
 		self.txtm.add_style("tny", 12)
@@ -159,19 +161,30 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 			self.log_f.write("{0} TRIAL {1} START {0}".format("*" * 52, P.trial_number, "*" * 52))
 			data = [self.show_dc_target, self.departed_dc]
 			self.log_f.write("\n*\tshow_dc_target: {0}, departed_dc: {1}".format(*data))
-			self.log_f.write("\n*" * 120)
+			self.log_f.write("\n{0}".format("*" * 120))
 
 		self.initial_fixation()
 
 		for dl in self.disc_locations:
 			self.display_refresh(dl)
 			while self.evm.before(dl.event_timeout_label, True):
+				if P.development_mode:
+					self.exp.log_f.write("\n\t**D{0} times out in {1}".format(dl.index, self.evm.until(dl.event_timeout_label)))
+
 				if dl.boundary_check(not dl.first_disc): # Only final disc will return True
 					break
 				self.display_refresh(dl)
 				ui_request()
+
 			if dl.timed_out:  # ie. should be False by now
-				raise TrialException("Timeout detected.")
+				if P.development_mode:
+					self.log_f.write("\n\t*** D{0} TIMED OUT ***".format(dl.index))
+					self.log_f.write("\n{0} {1} {0}\n".format("*" * 55, "TRIAL END", "*" * 54))
+				if not dl.final_disc:
+					raise TrialException("Timeout detected.")
+				else:
+					dl.rt = -1.0
+					dl.fixation_timestamp = [-1.0, -1.0]
 
 		if P.development_mode:
 			self.log_f.write("\n{0} {1} {0}\n".format("*" * 55, "TRIAL END", "*" * 54))
@@ -189,6 +202,8 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 				"saccades": self.saccade_count}
 
 	def trial_clean_up(self):
+		if P.development_mode:
+			self.log_f.write("\n\ntrial_clean_up() for trial".format(P.trial_id))
 		if P.trial_id:  # ie. if this isn't a recycled trial
 			for l in self.disc_locations:
 				self.database.insert( {
@@ -205,7 +220,7 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 				'penultimate': l.penultimate_disc,
 				'final': l.final_disc,
 				'timed_out': l.timed_out,
-				'rt': -1 if l.rt is None else l.rt,
+				'rt': -1.0 if l.rt is None else l.rt,
 				'fixate_trial_time': l.fixation_timestamp[0],
 				'fixate_el_time': l.fixation_timestamp[1],
 				},'trial_locations', False)
@@ -246,13 +261,23 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 		#  blit passed discs if they're allow_blit attribute is set
 		if P.development_mode:
 			if disc_location:
-				self.log_f.write("\n\n*** Current Disc: {0} at {1} ***".format(disc_location.index, self.evm.trial_time_ms))
+				disc_args = [disc_location.index, self.evm.trial_time_ms, "F" if disc_location.final_disc else "x", \
+							 "P" if disc_location.penultimate_disc else "x", "N" if disc_location.n_back else "x"]
+				self.log_f.write("\n\n*** Current Disc: {0} ({2}{3}{4}) at {1} ***".format(*disc_args))
 				for d in [disc_location, disc_location.previous_disc, disc_location.next_disc]:
 					try:
-						until_timeout = self.evm.until(d.event_timeout_label) if d.timing_out else None
-						until_decay = self.evm.until(d.offset_decay_label) if d.decaying else None
-						disc_attrs = [d.initial_blit, d.allow_blit, d.index, d.on_timestamp, d.off_timestamp, d.fixation_timestamp, d.exit_time, until_timeout, until_decay]
-						self.log_f.write("\nD{2}, initial_blit: {0}, allow_blit: {1}, on: {3}, off: {4}, fixation: {5}, exit: {6}, decay_in: {8}, timeout_in: {7}".format(*disc_attrs))
+						try:
+							until_timeout = self.evm.until(d.event_timeout_label) if d.timing_out else None
+						except EventError:
+							until_timeout = "ELAPSED"
+						try:
+							until_decay = self.evm.until(d.offset_decay_label) if d.decaying else None
+						except EventError:
+							until_decay = "ELAPSED"
+
+						disc_attrs = [d.initial_blit, d.allow_blit, d.index, d.on_timestamp, d.off_timestamp, d.fixation_timestamp, d.exit_time, until_timeout, until_decay, d.timed_out]
+						self.log_f.write("\nD{2}, initial_blit: {0}, allow_blit: {1}, on: {3}, off: {4}, fixation: {5}, exit: {6}, decay_in: {8},  timed_out: {9}, timeout_in: {7}".format(*disc_attrs))
+						self.log_f.write(" +")
 					except AttributeError:
 						pass
 				self.log_f.write("\n")
@@ -277,7 +302,6 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 					elif d.initial_blit and not d.off_timestamp:
 						d.record_removal(timestamp)
 
-
 	def generate_locations(self):
 		self.angle = 0
 		self.n_back_index = self.saccade_count - (2 + self.n_back)  # 1 for index, 1 b/c  n_back counts from penultimate saccade
@@ -295,6 +319,15 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 				self.generate_locations()
 
 	def quit(self):
+		if P.development_mode:
+			exception_list = traceback.format_stack()
+			exception_list = exception_list[:-2]
+			exception_list.extend(traceback.format_tb(sys.exc_info()[2]))
+			exception_list.extend(traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1]))
+
+			exception_str = "Traceback (most recent call last):\n"
+			exception_str += "".join(exception_list)
+			self.log_f.write(exception_str[:-1])
 		self.log_f.close()
 		super(WaldoMkIII, self).quit()
 
