@@ -1,6 +1,7 @@
 __author__ = "Jonathan Mulle"
 
 from os.path import join, isfile
+from os import makedirs
 
 from klibs.KLExceptions import *
 from klibs import P
@@ -72,6 +73,10 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 
 	def __init__(self, *args, **kwargs):
 		super(WaldoMkIII, self).__init__(*args, **kwargs)
+		try:
+			makedirs(join(P.assets_dir, "Local", "logs"))
+		except OSError:
+			pass
 
 	def setup(self):
 		self.log_f = open(join(P.local_dir, "logs", "P{0}_log_f.txt".format(P.participant_id)), "w+")
