@@ -51,6 +51,7 @@ table_defaults = {}
 dm_suppress_debug_pane = False
 dm_auto_threshold = True
 dm_trial_show_mouse = True
+dm_show_disc_indices = True
 #
 #########################################
 # Data Export Settings
@@ -95,8 +96,8 @@ use_bg_images = True
 
 fixation_interval = 2984  # ms, remember to remove 16ms to allow for screen refresh (ie. 3000 = 2984)
 drift_correct_initial_persist = 1000  # ms
-disc_timeout_interval = 10000  # ms
-final_disc_timeout_interval = 2000  # ms
+disc_timeout_interval = 3000  # ms
+final_disc_timeout_interval = 10000  # ms
 
 fixation_top = [None, None]
 fixation_central = [None, None]

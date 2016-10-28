@@ -101,7 +101,8 @@ class DiscLocation(EnvAgent):
 		self.event_exit_label = self.name + "_exit"
 		self.onset_delay_label = self.name + "_onset_delay_disc"
 		self.offset_decay_label = self.name + "_offset_decay_disc"
-		self.index_str = message(str(self.index), "disc test", blit_txt=False)
+		if P.dm_show_disc_indices:
+			self.index_str = message(str(self.index), "disc test", blit_txt=False)
 
 	def __str__(self):
 		f = "F" if self.final_disc else "x"
@@ -148,7 +149,7 @@ class DiscLocation(EnvAgent):
 		theta = angle_between(self.x_y_pos, self.exp.disc_locations[self.exp.n_back_index].x_y_pos)
 		for a in range(0, 360, 60):
 			self.__margin_check(point_pos(self.x_y_pos, d_xy, a + theta))
-		self.exp.search_disc_proto.fill = self.exp.penultimate_search_disk_color
+		self.exp.search_disc_proto.fill = self.exp.penultimate_disc_color
 		self.penultimate_disc = True
 
 	def __add_eyelink_boundary__(self):
@@ -172,7 +173,7 @@ class DiscLocation(EnvAgent):
 
 		if self.allow_blit:
 			blit(self.disc, 5, self.x_y_pos)
-			if P.development_mode:
+			if P.development_mode and P.dm_show_disc_indices:
 				blit(self.index_str, 5, self.x_y_pos)
 			self.initial_blit = True
 			if self.first_disc and self.removal_behavior == P.REMOVE_ON_PRESENTATION:
@@ -193,19 +194,23 @@ class DiscLocation(EnvAgent):
 				if P.development_mode:
 					self.exp.log_f.write("\n\tDeparted from initial fixation.")
 
-		if check_previous and not self.previous_disc.off_timestamp:
-			self.previous_disc.boundary_check(False)
-
 		trial_time = self.evm.trial_time
+		el_time = None
 		if self.final_disc:
 			el_time = self.el.saccade_to_boundary(self.boundary, EL_SACCADE_END)
+			if P.development_mode:
+				self.exp.log_f.write("\n\tD{0} checked for saccade with result: {1}".format(self.index, el_time))
 		elif self.fixation_timestamp is None:
 			el_time = self.el.fixated_boundary(self.boundary, EL_FIXATION_END)
-		else:
+		elif not self.el.within_boundary(self.boundary, EL_GAZE_POS):
 			return self.record_exit([trial_time, self.el.now()])
 
-		if el_time:
-			return self.record_fixation([trial_time, el_time])
+		if check_previous and not self.previous_disc.off_timestamp:
+			if P.development_mode:
+				self.exp.log_f.write("\n\tBoundary checking D{0} from D{1}".format(self.previous_disc.index, self.index))
+			self.previous_disc.boundary_check(False)
+
+		return self.record_fixation([trial_time, el_time]) if el_time else False
 
 	def check_decay(self):
 		if P.development_mode:
@@ -215,6 +220,8 @@ class DiscLocation(EnvAgent):
 			self.allow_blit = self.evm.before(self.offset_decay_label)
 
 	def record_fixation(self, timestamp):
+		# note: this method also records the timestamp for the **saccade** to the final disc
+
 		if P.development_mode:
 			self.exp.log_f.write("\n\tD{0}: record_fixation(timestamp={1})".format(self.index, timestamp))
 
@@ -238,21 +245,21 @@ class DiscLocation(EnvAgent):
 	def record_exit(self, timestamp):
 		if P.development_mode:
 			self.exp.log_f.write("\n\tD{0}: record_exit(timestamp={1})".format(self.index, timestamp))
-		if not self.el.within_boundary(self.boundary, EL_GAZE_POS):
-			if not self.fixation_timestamp:
-				raise RuntimeError("Exit timestamp recorded before fixation")
-			self.exit_time = timestamp
-			if self.removal_behavior == P.REMOVE_ON_DECAY:
-				self.__start_decay__()
-			if self.removal_behavior == P.REMOVE_INTER_SACCADE:
-				self.allow_blit = False
-			if self.presentation_behavior == P.PRESENT_INTER_SACCADE and not (self.penultimate_disc or self.final_disc):
-				if P.development_mode:
-					self.exp.log_f.write("\n\t\t*** Allowing D{0} to blit. ***".format(self.next_disc.next_disc.index))
-				self.next_disc.next_disc.allow_blit = True
-			else:
-				if P.development_mode:
-					self.exp.log_f.write("\n\t\t*** Exit Behavior Cond: {0}, Exit Disc ID: {1}***".format(self.presentation_behavior == P.PRESENT_INTER_SACCADE, not (self.penultimate_disc or self.final_disc)))
+		# if not self.el.within_boundary(self.boundary, EL_GAZE_POS):
+		if not self.fixation_timestamp:
+			raise RuntimeError("Exit timestamp recorded before fixation")
+		self.exit_time = timestamp
+		if self.removal_behavior == P.REMOVE_ON_DECAY:
+			self.__start_decay__()
+		if self.removal_behavior == P.REMOVE_INTER_SACCADE:
+			self.allow_blit = False
+		if self.presentation_behavior == P.PRESENT_INTER_SACCADE and not (self.penultimate_disc or self.final_disc):
+			if P.development_mode:
+				self.exp.log_f.write("\n\t\t*** Allowing D{0} to blit. ***".format(self.next_disc.next_disc.index))
+			self.next_disc.next_disc.allow_blit = True
+		else:
+			if P.development_mode:
+				self.exp.log_f.write("\n\t\t*** Exit Behavior Cond: {0}, Exit Disc ID: {1}***".format(self.presentation_behavior == P.PRESENT_INTER_SACCADE, not (self.penultimate_disc or self.final_disc)))
 
 	def record_presentation(self, timestamp):
 		if P.development_mode:
