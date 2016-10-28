@@ -116,6 +116,7 @@ class DiscLocation(EnvAgent):
 			n_back = self.exp.disc_locations[self.exp.n_back_index]
 			penultimate = self.exp.disc_locations[-1]
 			angle = self.exp.angle
+			print "this final's angle is: {0}".format(angle)
 			amplitude = int(line_segment_len(n_back.x_y_pos, penultimate.x_y_pos))
 			self.rotation = angle_between(penultimate.x_y_pos, n_back.x_y_pos)
 		else:
@@ -147,7 +148,7 @@ class DiscLocation(EnvAgent):
 		theta = angle_between(self.x_y_pos, self.exp.disc_locations[self.exp.n_back_index].x_y_pos)
 		for a in range(0, 360, 60):
 			self.__margin_check(point_pos(self.x_y_pos, d_xy, a + theta))
-		self.exp.search_disc_proto.fill = (0,255,0,255)
+		self.exp.search_disc_proto.fill = self.exp.penultimate_search_disk_color
 		self.penultimate_disc = True
 
 	def __add_eyelink_boundary__(self):

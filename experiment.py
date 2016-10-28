@@ -29,6 +29,7 @@ RED = [236, 88, 64, 255]
 WHITE = [255,255,255,255]
 GREY = [125,125,125,255]
 BLACK = [0,0,0,255]
+GREEN = [0,255,0,255]
 BG_ABSENT = "absent"
 BG_PRESENT = "present"
 BG_INTERMITTENT = "intermittent"
@@ -48,6 +49,7 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 	disc_diameter = None
 	search_disc_proto = None
 	search_disc_color = BLACK
+	penultimate_search_disk_color = GREEN
 	display_margin = None  # ie. the area in which targets may not be presented
 	allow_intermittent_bg = True
 	fixation_boundary_tolerance = 1.5  # scales boundary (not image) if drift_correct target too small to fixate
@@ -73,10 +75,6 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 
 	def __init__(self, *args, **kwargs):
 		super(WaldoMkIII, self).__init__(*args, **kwargs)
-		try:
-			makedirs(join(P.assets_dir, "Local", "logs"))
-		except OSError:
-			pass
 
 	def setup(self):
 		self.log_f = open(join(P.local_dir, "logs", "P{0}_log_f.txt".format(P.participant_id)), "w+")
@@ -135,7 +133,9 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 	def trial_prep(self):
 		self.show_dc_target = True
 		self.departed_dc = False
+		print "angle before type change is: {0}".format(self.angle)
 		self.angle = int(self.angle)
+		print "angle after type change is: {0}".format(self.angle)
 		self.n_back = int(self.n_back)
 		self.saccade_count = randrange(self.min_saccades, self.max_saccades)
 		fill()
@@ -143,6 +143,7 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 		blit(m)
 		flip()
 		errors = 0
+		print "Generating targets, final angle should be: {0}".format(self.angle)
 		while len(self.disc_locations) != self.saccade_count:
 			fill()
 			blit(m, location=(25,25))
@@ -190,7 +191,7 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 				"bg_state": self.bg_state,
 				"n_back": self.n_back,
 				"amplitude": px_to_deg(self.disc_locations[-1].amplitude),
-				"angle": self.disc_locations[-1].angle,
+				"angle": self.angle,
 				"saccades": self.saccade_count}
 
 	def trial_clean_up(self):
@@ -217,6 +218,7 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 		self.disc_locations = []
 		self.el.clear_boundaries([INITIAL_FIXATION])
 		self.bg = None
+		self.angle = None
 
 	def clean_up(self):
 		pass
@@ -282,9 +284,7 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 					elif d.initial_blit and not d.off_timestamp:
 						d.record_removal(timestamp)
 
-
 	def generate_locations(self):
-		self.angle = 0
 		self.n_back_index = self.saccade_count - (2 + self.n_back)  # 1 for index, 1 b/c  n_back counts from penultimate saccade
 		failed_generations = 0
 
