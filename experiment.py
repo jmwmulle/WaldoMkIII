@@ -49,7 +49,7 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 	disc_diameter = None
 	search_disc_proto = None
 	penultimate_disc_color = BLUE
-	search_disc_color = RED
+	search_disc_color = BLACK
 	display_margin = None  # ie. the area in which targets may not be presented
 	allow_intermittent_bg = True
 	fixation_boundary_tolerance = 1.5  # scales boundary (not image) if drift_correct target too small to fixate
@@ -133,9 +133,7 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 	def trial_prep(self):
 		self.show_dc_target = True
 		self.departed_dc = False
-		print "angle before type change is: {0}".format(self.angle)
 		self.angle = int(self.angle)
-		print "angle after type change is: {0}".format(self.angle)
 		self.n_back = int(self.n_back)
 		self.saccade_count = randrange(self.min_saccades, self.max_saccades)
 		fill()
@@ -143,7 +141,6 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 		blit(m)
 		flip()
 		errors = 0
-		print "Generating targets, final angle should be: {0}".format(self.angle)
 		while len(self.disc_locations) != self.saccade_count:
 			fill()
 			blit(m, location=(25,25))

@@ -117,7 +117,6 @@ class DiscLocation(EnvAgent):
 			n_back = self.exp.disc_locations[self.exp.n_back_index]
 			penultimate = self.exp.disc_locations[-1]
 			angle = self.exp.angle
-			print "this final's angle is: {0}".format(angle)
 			amplitude = int(line_segment_len(n_back.x_y_pos, penultimate.x_y_pos))
 			self.rotation = angle_between(penultimate.x_y_pos, n_back.x_y_pos)
 		else:
