@@ -6,7 +6,7 @@ from klibs.KLExceptions import *
 from klibs import P
 
 from klibs import Experiment
-from klibs.KLConstants import CIRCLE_BOUNDARY, TK_S, BL_CENTER
+from klibs.KLConstants import CIRCLE_BOUNDARY, TK_S, BL_CENTER, EL_GAZE_POS
 from klibs.KLUtilities import deg_to_px, px_to_deg
 from klibs.KLUserInterface import ui_request
 from klibs.KLGraphics import blit, fill, flip
@@ -53,7 +53,7 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 	display_margin = None  # ie. the area in which targets may not be presented
 	allow_intermittent_bg = True
 	fixation_boundary_tolerance = 1.5  # scales boundary (not image) if drift_correct target too small to fixate
-	disc_boundary_tolerance = 1.0  # scales boundary (not image) if drift_correct target too small to fixate
+	disc_boundary_tolerance = 1.5  # scales boundary (not image) if drift_correct target too small to fixate
 	looked_away_msg = None
 	eyes_moved_message = None
 
@@ -247,7 +247,7 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 	def initial_fixation(self):
 		self.display_refresh()
 		while self.evm.before("initial fixation end", True):
-			if not self.el.within_boundary(INITIAL_FIXATION):
+			if not self.el.within_boundary(INITIAL_FIXATION, EL_GAZE_POS):
 				self.evm.register_ticket(TET("failed initial fixation", self.evm.trial_time + 1.0, None, False, TK_S))
 				while self.evm.before("failed initial fixation", True):
 					fill(RED)

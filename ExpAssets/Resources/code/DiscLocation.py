@@ -206,7 +206,7 @@ class DiscLocation(EnvAgent):
 
 		# when dc has been left for first disc, on inter_saccade trials, turn on next disc
 		if self.first_disc and not self.exp.departed_dc:
-			if self.presentation_behavior == P.PRESENT_INTER_SACCADE and not self.exp.el.within_boundary(INITIAL_FIXATION):
+			if self.presentation_behavior == P.PRESENT_INTER_SACCADE and not self.exp.el.within_boundary(INITIAL_FIXATION, EL_GAZE_POS):
 				self.next_disc.allow_blit = True
 				self.exp.departed_dc = True
 				if P.development_mode:
