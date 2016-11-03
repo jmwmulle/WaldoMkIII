@@ -70,10 +70,13 @@ CREATE TABLE trials (
   timed_out text not null,
   rt float not null,
   target_type text not null,
+  target_count text not null,
+  target_choice text not null,
   bg_state text not null,
   n_back integer not null,
   amplitude numeric not null,
-  angle integer not null,
+  primary_angle integer not null,
+  secondary_angle integer not null,
   saccades integer not null
 );
 

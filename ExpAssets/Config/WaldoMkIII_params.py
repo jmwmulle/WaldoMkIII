@@ -92,6 +92,7 @@ REMOVE_INTER_SACCADE = "rem_inter_saccade"
 target_removal_behavior = {REMOVE_ON_DECAY: False, REMOVE_ON_PRESENTATION: False, REMOVE_INTER_SACCADE: True}
 target_presentation_behavior = {PRESENT_INTER_SACCADE: True, PRESENT_ON_FIXATION: False}
 
+
 use_bg_images = True
 
 fixation_interval = 2984  # ms, remember to remove 16ms to allow for screen refresh (ie. 3000 = 2984)

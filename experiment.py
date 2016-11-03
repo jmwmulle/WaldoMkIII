@@ -53,7 +53,7 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 	display_margin = None  # ie. the area in which targets may not be presented
 	allow_intermittent_bg = True
 	fixation_boundary_tolerance = 1.5  # scales boundary (not image) if drift_correct target too small to fixate
-	disc_boundary_tolerance = 1.25  # scales boundary (not image) if drift_correct target too small to fixate
+	disc_boundary_tolerance = 1.0  # scales boundary (not image) if drift_correct target too small to fixate
 	looked_away_msg = None
 	eyes_moved_message = None
 
@@ -68,6 +68,7 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 	frame_size = "1024x768"
 	n_back = None  # populated from config
 	angle = None   # populated from config
+	secondary_angle = None   # populated from trial_prep() when appropriate from P.final_location_config
 	n_back_index = None
 	inter_disc_event_label = None  # set after each disc has been saccaded to
 	show_dc_target = True
@@ -75,6 +76,7 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 
 	def __init__(self, *args, **kwargs):
 		super(WaldoMkIII, self).__init__(*args, **kwargs)
+		BoundaryInspector.__init__(self)
 
 	def setup(self):
 		self.log_f = open(join(P.local_dir, "logs", "P{0}_log_f.txt".format(P.participant_id)), "w+")
@@ -134,6 +136,12 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 		self.show_dc_target = True
 		self.departed_dc = False
 		self.angle = int(self.angle)
+		if self.target_count == 2:
+			self.secondary_angle = self.angle - 180
+			if self.secondary_angle < 0:
+				self.secondary_angle = self.angle + 180
+		else:
+			self.secondary_angle = -1
 		self.n_back = int(self.n_back)
 		self.saccade_count = randrange(self.min_saccades, self.max_saccades)
 		fill()
@@ -196,10 +204,13 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 				"timed_out": self.disc_locations[-1].timed_out,
 				"rt": self.disc_locations[-1].rt,
 				"target_type": "NBACK" if self.disc_locations[-1].n_back else "NOVEL",
+				"target_count": P.final_disc_config['locations'],
+				"target_choice": self.disc_locations[-1].saccade_choice,
 				"bg_state": self.bg_state,
 				"n_back": self.n_back,
 				"amplitude": px_to_deg(self.disc_locations[-1].amplitude),
-				"angle": self.angle,
+				"primary_angle": self.angle,
+				"secondary_angle": self.secondary_angle,
 				"saccades": self.saccade_count}
 
 	def trial_clean_up(self):

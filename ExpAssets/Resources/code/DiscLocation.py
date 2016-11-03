@@ -40,10 +40,13 @@ class DiscLocation(EnvAgent):
 		self.initial_blit = False
 		self.amplitude = None
 		self.angle = None
+		self.secondary_angle = None
 		self.rotation = 0
 		self.index = len(self.exp.disc_locations)
 		self.boundary = "saccade_{0}".format(self.index)
+		self.secondary_boundary = "saccade_{0}_secondary".format(self.index)
 		self.x_y_pos = (None, None)
+		self.secondary_x_y_pos = (None, None)
 		self.x_range = range(self.exp.display_margin, P.screen_x - self.exp.display_margin)
 		self.y_range = range(self.exp.display_margin, P.screen_y - self.exp.display_margin)
 		self.viable = True
@@ -74,6 +77,8 @@ class DiscLocation(EnvAgent):
 		self.rt = None  # only the final location will populate this value
 		self.first_disc = False
 		self.final_disc = self.index == self.exp.saccade_count - 1
+		self.using_secondary_pos = (self.final_disc and self.exp.target_count == 2)
+		self.saccade_choice = None
 		self.allow_blit = False
 		
 		self.decay_interval = P.target_removal_behavior[P.REMOVE_ON_DECAY]
@@ -103,6 +108,7 @@ class DiscLocation(EnvAgent):
 		self.offset_decay_label = self.name + "_offset_decay_disc"
 		if P.dm_show_disc_indices:
 			self.index_str = message(str(self.index), "disc test", blit_txt=False)
+			self.secondary_index_str = message(str(self.index) + "-2", "disc test", blit_txt=False)
 
 	def __str__(self):
 		f = "F" if self.final_disc else "x"
@@ -119,6 +125,11 @@ class DiscLocation(EnvAgent):
 			angle = self.exp.angle
 			amplitude = int(line_segment_len(n_back.x_y_pos, penultimate.x_y_pos))
 			self.rotation = angle_between(penultimate.x_y_pos, n_back.x_y_pos)
+			if self.using_secondary_pos:
+				self.secondary_angle = angle - 180
+				if self.secondary_angle < 0:
+					self.secondary_angle = angle + 180
+				self.secondary_x_y_pos = point_pos(self.origin, amplitude, self.secondary_angle, self.rotation)
 		else:
 			amplitude = randrange(self.exp.min_amplitude, self.exp.max_amplitude)
 			angle = randrange(0, 360)
@@ -155,9 +166,13 @@ class DiscLocation(EnvAgent):
 		r = int(self.exp.search_disc_proto.surface_width + self.exp.disc_boundary_tolerance) // 2
 
 		try:
-			self.el.add_boundary("saccade_{0}".format(self.index), [self.x_y_pos, r], CIRCLE_BOUNDARY)
+			self.el.add_boundary(self.boundary, [self.x_y_pos, r], CIRCLE_BOUNDARY)
+			if self.using_secondary_pos:
+				self.el.add_boundary(self.secondary_boundary, [self.secondary_x_y_pos, r], CIRCLE_BOUNDARY)
 		except AttributeError:
-			self.exp.add_boundary("saccade_{0}".format(self.index), [self.x_y_pos, r], CIRCLE_BOUNDARY)
+			self.exp.add_boundary(self.boundary, [self.x_y_pos, r], CIRCLE_BOUNDARY)
+			if self.using_secondary_pos:
+				self.exp.add_boundary(self.secondary_boundary, [self.secondary_x_y, r], CIRCLE_BOUNDARY)
 
 	def __start_decay__(self):
 		if P.development_mode:
@@ -172,8 +187,12 @@ class DiscLocation(EnvAgent):
 
 		if self.allow_blit:
 			blit(self.disc, 5, self.x_y_pos)
+			if self.using_secondary_pos:
+				blit(self.disc, 5, self.secondary_x_y_pos)
 			if P.development_mode and P.dm_show_disc_indices:
 				blit(self.index_str, 5, self.x_y_pos)
+				if self.using_secondary_pos:
+					blit(self.secondary_index_str, 5, self.secondary_x_y_pos)
 			self.initial_blit = True
 			if self.first_disc and self.removal_behavior == P.REMOVE_ON_PRESENTATION:
 				self.exp.show_dc_target = False  # after the first disc is shown, dc_target should be off
@@ -196,7 +215,14 @@ class DiscLocation(EnvAgent):
 		trial_time = self.evm.trial_time
 		el_time = None
 		if self.final_disc:
-			el_time = self.el.saccade_to_boundary(self.boundary, EL_SACCADE_END)
+			event_queue = self.el.get_event_queue(include=[EL_SACCADE_END])
+			el_time = self.el.saccade_to_boundary(self.boundary, EL_SACCADE_END, event_queue)
+			if el_time:
+				self.saccade_choice = 1
+			elif self.using_secondary_pos:
+				el_time = self.el.saccade_to_boundary(self.secondary_boundary, EL_SACCADE_END, event_queue)
+				if el_time:
+					self.saccade_choice = 2
 			if P.development_mode:
 				self.exp.log_f.write("\n\tD{0} checked for saccade with result: {1}".format(self.index, el_time))
 		elif self.fixation_timestamp is None:
