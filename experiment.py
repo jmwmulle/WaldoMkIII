@@ -52,8 +52,8 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 	search_disc_color = BLACK
 	display_margin = None  # ie. the area in which targets may not be presented
 	allow_intermittent_bg = True
-	fixation_boundary_tolerance = 1.5  # scales boundary (not image) if drift_correct target too small to fixate
-	disc_boundary_tolerance = 1.5  # scales boundary (not image) if drift_correct target too small to fixate
+	fixation_boundary_tolerance = 3  # scales boundary (not image) if drift_correct target too small to fixate
+	disc_boundary_tolerance = 1.75  # scales boundary (not image) if drift_correct target too small to fixate
 	looked_away_msg = None
 	eyes_moved_message = None
 
@@ -136,6 +136,7 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 		self.show_dc_target = True
 		self.departed_dc = False
 		self.angle = int(self.angle)
+		self.target_count = int(self.target_count)
 		if self.target_count == 2:
 			self.secondary_angle = self.angle - 180
 			if self.secondary_angle < 0:
@@ -149,6 +150,7 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 		blit(m)
 		flip()
 		errors = 0
+
 		while len(self.disc_locations) != self.saccade_count:
 			fill()
 			blit(m, location=(25,25))
@@ -204,7 +206,7 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 				"timed_out": self.disc_locations[-1].timed_out,
 				"rt": self.disc_locations[-1].rt,
 				"target_type": "NBACK" if self.disc_locations[-1].n_back else "NOVEL",
-				"target_count": P.final_disc_config['locations'],
+				"target_count": self.target_count,
 				"target_choice": self.disc_locations[-1].saccade_choice,
 				"bg_state": self.bg_state,
 				"n_back": self.n_back,
@@ -328,7 +330,6 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 				failed_generations += 1
 				if failed_generations > 10:
 					raise
-				self.generate_locations()
 
 	def quit(self):
 		if P.development_mode:

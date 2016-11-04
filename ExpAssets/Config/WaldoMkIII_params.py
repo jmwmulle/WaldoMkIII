@@ -6,7 +6,7 @@ import random
 #########################################
 # Available Hardware
 #########################################
-eye_tracker_available = True
+eye_tracker_available = False
 eye_tracking = True
 labjack_available = True
 labjacking = False
