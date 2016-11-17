@@ -2,13 +2,16 @@ __author__ = "Jonathan Mulle"
 
 from os.path import join, isfile
 import traceback, sys
+from time import time
+
 from klibs.KLExceptions import *
 from klibs import P
 
 from klibs import Experiment
 from klibs.KLConstants import CIRCLE_BOUNDARY, TK_S, BL_CENTER, EL_GAZE_POS
 from klibs.KLUtilities import deg_to_px, px_to_deg
-from klibs.KLUserInterface import ui_request
+
+from klibs.KLUserInterface import ui_request, any_key
 from klibs.KLGraphics import blit, fill, flip
 from klibs.KLGraphics.KLDraw import Annulus, drift_correct_target
 from klibs.KLGraphics.KLNumpySurface import NumpySurface as NpS
@@ -74,6 +77,7 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 	show_dc_target = True
 	departed_dc = False
 
+
 	def __init__(self, *args, **kwargs):
 		super(WaldoMkIII, self).__init__(*args, **kwargs)
 		BoundaryInspector.__init__(self)
@@ -108,7 +112,8 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 		self.looked_away_msg = message("Looked away too soon.", "err", blit_txt=False)
 		message("Loading, please hold...", "msg", flip_screen=True)
 		if not P.testing:
-			scale_images = False
+			scale_images = True
+			# for i in range(1, self.trial_factory.num_values("bg_image")):
 			for i in range(1, 10):
 				ui_request()
 				image_key = "wally_0{0}".format(i)
@@ -125,6 +130,7 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 				if scale_images:
 					self.backgrounds[image_key][1].scale(P.screen_x_y)
 				self.backgrounds[image_key][1] = self.backgrounds[image_key][1].render()
+
 
 	def block(self):
 		pass
@@ -205,7 +211,8 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 				"bg_image": self.bg[0],
 				"timed_out": self.disc_locations[-1].timed_out,
 				"rt": self.disc_locations[-1].rt,
-				"target_type": "NBACK" if self.disc_locations[-1].n_back else "NOVEL",
+				"primary_target_type": "NBACK" if self.disc_locations[-1].n_back else "NOVEL",
+				"secondary_target_type": "NBACK" if self.disc_locations[-1].angle == 180 else "NOVEL",
 				"target_count": self.target_count,
 				"target_choice": self.disc_locations[-1].saccade_choice,
 				"bg_state": self.bg_state,

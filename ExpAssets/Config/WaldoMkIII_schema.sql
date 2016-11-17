@@ -33,7 +33,7 @@ This wil export the database in it's current state to text files found in /KLAB/
 
 CREATE TABLE participants (
 	id integer primary key autoincrement not null,
-	userhash text not null,
+	userhash text not null unique,
 	random_seed text not null,
 	sex text not null,
 	age integer not null, 
@@ -69,7 +69,8 @@ CREATE TABLE trials (
 	bg_image text not null,
   timed_out text not null,
   rt float not null,
-  target_type text not null,
+  primary_target_type text not null,
+  secondary_target_type text not null,
   target_count text not null,
   target_choice text not null,
   bg_state text not null,

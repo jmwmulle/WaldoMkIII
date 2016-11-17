@@ -18,7 +18,7 @@ default_fill_color = (45, 45, 45, 255)
 default_color = (255, 255, 255, 255)
 default_response_color = default_color
 default_input_color = default_color
-default_font_size = 28
+default_font_size = "28px"
 default_font_name = 'Frutiger'
 default_timeout_message = "Too slow!"
 #
