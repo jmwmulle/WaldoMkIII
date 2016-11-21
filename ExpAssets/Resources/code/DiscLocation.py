@@ -8,6 +8,7 @@ from klibs.KLConstants import CIRCLE_BOUNDARY, EL_GAZE_POS, EL_FIXATION_END, EL_
 from klibs.KLUtilities import line_segment_len, angle_between, point_pos
 from klibs.KLUserInterface import ui_request
 from klibs.KLGraphics import blit
+from klibs.KLGraphics.KLDraw import Circle
 from klibs.KLCommunication import message
 from klibs.KLEventInterface import TrialEventTicket as TET
 
@@ -33,6 +34,7 @@ class DiscLocation(EnvAgent):
 		self.__exit_time__ = None
 		self.__timed_out__ = True # only set to false once fixated
 		self.errors = 0
+		self.debug_boundary = None  # only used if P.dm_draw_boundaries is True
 		try:
 			self.origin = self.exp.disc_locations[-1].x_y_pos
 		except IndexError:
@@ -165,6 +167,8 @@ class DiscLocation(EnvAgent):
 	def __add_eyelink_boundary__(self):
 		r = int(self.exp.search_disc_proto.surface_width + self.exp.disc_boundary_tolerance) // 2
 
+		if P.dm_draw_boundaries:
+			self.debug_boundary = Circle(r*2, [1, (255,0,0)]).render()
 		try:
 			self.el.add_boundary(self.boundary, [self.x_y_pos, r], CIRCLE_BOUNDARY)
 			if self.using_secondary_pos:
@@ -189,10 +193,16 @@ class DiscLocation(EnvAgent):
 			blit(self.disc, 5, self.x_y_pos)
 			if self.using_secondary_pos:
 				blit(self.disc, 5, self.secondary_x_y_pos)
-			if P.development_mode and P.dm_show_disc_indices:
-				blit(self.index_str, 5, self.x_y_pos)
-				if self.using_secondary_pos:
-					blit(self.secondary_index_str, 5, self.secondary_x_y_pos)
+			if P.development_mode:
+				if P.dm_show_disc_indices:
+					blit(self.index_str, 5, self.x_y_pos)
+					if self.using_secondary_pos:
+						blit(self.secondary_index_str, 5, self.secondary_x_y_pos)
+				if P.dm_draw_boundaries:
+					blit(self.debug_boundary, 5, self.x_y_pos)
+					if self.using_secondary_pos:
+						blit(self.debug_boundary, 5, self.secondary_x_y_pos)
+
 			self.initial_blit = True
 			if self.first_disc and self.removal_behavior == P.REMOVE_ON_PRESENTATION:
 				self.exp.show_dc_target = False  # after the first disc is shown, dc_target should be off

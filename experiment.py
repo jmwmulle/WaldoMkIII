@@ -112,7 +112,7 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 		self.looked_away_msg = message("Looked away too soon.", "err", blit_txt=False)
 		message("Loading, please hold...", "msg", flip_screen=True)
 		if not P.testing:
-			scale_images = True
+			scale_images = False
 			# for i in range(1, self.trial_factory.num_values("bg_image")):
 			for i in range(1, 10):
 				ui_request()
@@ -125,12 +125,12 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 					image_f = join(P.image_dir, image_key, "1920x1080.jpg")
 					scale_images = True
 				img_ns = NpS(image_f)
-
-				self.backgrounds[image_key] = ([image_key, img_ns, avg_color])
+				self.backgrounds[image_key] = ([image_key, img_ns, avg_color, message(image_key, blit_txt=False)])
 				if scale_images:
+					print "scaling..."
 					self.backgrounds[image_key][1].scale(P.screen_x_y)
 				self.backgrounds[image_key][1] = self.backgrounds[image_key][1].render()
-
+		# self.quit()
 
 	def block(self):
 		pass
@@ -268,13 +268,14 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 	def display_refresh(self, disc_location=None):
 		#  handle the removal of background image on absent condition trials
 		ui_request()
+		fill(GREY)
 		if self.bg_state != BG_ABSENT:
 			if (disc_location is not None and disc_location.final_disc) and self.bg_state == BG_INTERMITTENT:
 				fill(self.bg[2])
 			else:
+				if P.development_mode:
+					blit(self.bg[3], 7, (50,50))
 				blit(self.bg[1])
-		else:
-			fill(GREY)
 
 		#  show the drift correct target if need be
 		if self.show_dc_target:

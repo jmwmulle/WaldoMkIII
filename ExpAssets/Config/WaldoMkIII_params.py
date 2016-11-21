@@ -52,6 +52,7 @@ dm_suppress_debug_pane = False
 dm_auto_threshold = True
 dm_trial_show_mouse = True
 dm_show_disc_indices = True
+dm_draw_boundaries = True
 #
 #########################################
 # Data Export Settings
@@ -59,25 +60,6 @@ dm_show_disc_indices = True
 data_columns = None
 default_participant_fields = [["userhash", "participant"], "sex", "age", "handedness"]
 default_participant_fields_sf = [["userhash", "participant"], "random_seed", "sex", "age", "handedness"]
-
-#
-#########################################
-# Demographics Questions
-#########################################
-# Note: This list must supply all columns in the configured Participants table except:
-# 	- id
-# 	- participant id
-# 	- random_seed
-#	- klibs_commit (if present)
-#	- created
-# These columns must be present in the participants table (except klibs_commit) and are supplied automatically by klibs
-demographic_questions = [
-	['sex', "What is your sex? \nAnswer with:  (m)ale,(f)emale", ('m', 'M', 'f', 'F'), 'str', random.choice(['m', 'f'])],
-	['handedness', "Are right-handed, left-handed or ambidextrous? \nAnswer with (r)ight, (l)eft or (a)mbidextrous.",
-	 ('r', 'R', 'l', 'L', 'a', 'A'), 'str', 'r'],
-	['age', 'What is  your age?', None, 'int', -1]
-]
-
 #
 #########################################
 # PROJECT-SPECIFIC VARS
