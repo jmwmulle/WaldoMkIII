@@ -103,7 +103,7 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 		# if P.inter_disc_interval and P.persist_to_exit_saccade:
 		# 	raise RuntimeError("P.inter_disc_interval and P.persist_to_exit_saccade cannot both be set.")
 		r = drift_correct_target().width * self.fixation_boundary_tolerance
-		self.el.add_gaze_boundary(INITIAL_FIXATION, [P.screen_c, r], CIRCLE_BOUNDARY)
+		self.el.add_boundary(INITIAL_FIXATION, [P.screen_c, r], CIRCLE_BOUNDARY)
 		fill(P.default_fill_color)
 		self.txtm.add_style("msg", 32, WHITE)
 		self.txtm.add_style("err", 64, WHITE)

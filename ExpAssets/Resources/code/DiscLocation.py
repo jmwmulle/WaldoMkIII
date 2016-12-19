@@ -4,7 +4,7 @@ from random import randrange
 from klibs.KLExceptions import TrialException
 from klibs import P
 from klibs.KLEnvironment import EnvAgent
-from klibs.KLConstants import CIRCLE_BOUNDARY, EL_GAZE_POS, EL_FIXATION_END, EL_SACCADE_END
+from klibs.KLConstants import CIRCLE_BOUNDARY, EL_GAZE_POS, EL_FIXATION_END, EL_FIXATION_START, EL_SACCADE_END
 from klibs.KLUtilities import line_segment_len, angle_between, point_pos
 from klibs.KLUserInterface import ui_request
 from klibs.KLGraphics import blit
@@ -236,7 +236,7 @@ class DiscLocation(EnvAgent):
 			if P.development_mode:
 				self.exp.log_f.write("\n\tD{0} checked for saccade with result: {1}".format(self.index, el_time))
 		elif self.fixation_timestamp is None:
-			el_time = self.el.fixated_boundary(self.boundary, EL_FIXATION_END)
+			el_time = self.el.fixated_boundary(self.boundary, EL_FIXATION_START)
 		elif not self.el.within_boundary(self.boundary, EL_GAZE_POS):
 			return self.record_exit([trial_time, self.el.now()])
 
