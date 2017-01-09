@@ -3,6 +3,7 @@ __author__ = "Jonathan Mulle"
 from os.path import join, isfile
 import traceback, sys
 from time import time
+import imp
 
 from klibs.KLExceptions import *
 from klibs import P
@@ -43,7 +44,7 @@ INITIAL_FIXATION = "initial fixation"
 
 class WaldoMkIII(Experiment, BoundaryInspector):
 	max_amplitude_deg = 6  # degrees of visual angle
-	min_amplitude_deg = 3  # degrees of visual angle
+	min_amplitude_deg = 4  # degrees of visual angle
 	max_amplitude = None  # px
 	min_amplitude = None  # px
 	min_saccades = 5
@@ -56,7 +57,7 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 	display_margin = None  # ie. the area in which targets may not be presented
 	allow_intermittent_bg = True
 	fixation_boundary_tolerance = 3  # scales boundary (not image) if drift_correct target too small to fixate
-	disc_boundary_tolerance = 1.75  # scales boundary (not image) if drift_correct target too small to fixate
+	disc_boundary_tolerance = 3.5  # scales boundary (not image) if drift_correct target too small to fixate
 	looked_away_msg = None
 	eyes_moved_message = None
 
@@ -64,6 +65,7 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 	log_f = None
 	disc_locations = []
 	trial_type = None
+	target_count = None
 	backgrounds = {}
 	bg = None
 	bg_state = None
@@ -76,7 +78,6 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 	inter_disc_event_label = None  # set after each disc has been saccaded to
 	show_dc_target = True
 	departed_dc = False
-
 
 	def __init__(self, *args, **kwargs):
 		super(WaldoMkIII, self).__init__(*args, **kwargs)
@@ -91,6 +92,7 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 				  "drift_correct_initial_persist": P.drift_correct_initial_persist,
 				  "final_disc_timeout_interval": P.final_disc_timeout_interval
 		}
+
 		if P.development_mode:
 			for k in header:
 				self.log_f.write("{0}: {1}\n".format(k, header[k]))
@@ -119,18 +121,21 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 				image_key = "wally_0{0}".format(i)
 				#  there are 3 sizes of image included by default; if none match the screen res, choose 1080p then scale
 				image_f = join(P.image_dir, image_key,"{0}x{1}.jpg".format(*P.screen_x_y))
+				for k, v in imp.load_source("*", join(P.image_dir, image_key, "average_color.txt")).__dict__.iteritems():
+					if k == "avg_color":
+						avg_color = v
+					if k == "avg_luminance":
+						avg_luminance= v
 				with open(join(P.image_dir, image_key, "average_color.txt")) as color_f:
 					avg_color = eval(color_f.read())
 				if not isfile(image_f):
 					image_f = join(P.image_dir, image_key, "1920x1080.jpg")
 					scale_images = True
 				img_ns = NpS(image_f)
-				self.backgrounds[image_key] = ([image_key, img_ns, avg_color, message(image_key, blit_txt=False)])
+				self.backgrounds[image_key] = ([image_key, img_ns, avg_color, avg_luminance, message(image_key, blit_txt=False)])
 				if scale_images:
-					print "scaling..."
 					self.backgrounds[image_key][1].scale(P.screen_x_y)
 				self.backgrounds[image_key][1] = self.backgrounds[image_key][1].render()
-		# self.quit()
 
 	def block(self):
 		pass
@@ -170,10 +175,11 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 
 		self.bg = self.backgrounds[self.bg_image]
 		self.evm.register_ticket(TET("initial fixation end", P.fixation_interval))
-		self.el.drift_correct(boundary=INITIAL_FIXATION)
+		self.el.drift_correct(boundary=INITIAL_FIXATION, fill_color=self.bg[3])
 		self.display_refresh()
 
 	def trial(self):
+		print "trial"
 		if P.development_mode:
 			self.log_f.write("{0} TRIAL {1} START {0}".format("*" * 52, P.trial_number, "*" * 52))
 			data = [self.show_dc_target, self.departed_dc]
@@ -274,7 +280,7 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 				fill(self.bg[2])
 			else:
 				if P.development_mode:
-					blit(self.bg[3], 7, (50,50))
+					blit(self.bg[4], 7, (50,50))
 				blit(self.bg[1])
 
 		#  show the drift correct target if need be
@@ -341,13 +347,14 @@ class WaldoMkIII(Experiment, BoundaryInspector):
 
 	def quit(self):
 		if P.development_mode:
-			exception_list = traceback.format_stack()
-			exception_list = exception_list[:-2]
-			exception_list.extend(traceback.format_tb(sys.exc_info()[2]))
-			exception_list.extend(traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1]))
+			# exception_list = traceback.format_stack()
+			# exception_list = exception_list[:-2]
+			# exception_list.extend(traceback.format_tb(sys.exc_info()[2]))
+			# exception_list.extend(traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1]))
 
 			exception_str = "Traceback (most recent call last):\n"
-			exception_str += "".join(exception_list)
+			# exception_str += "".join(exception_list)
+			exception_str += "".join(traceback.format_exception_only(sys.exc_info()[0], sys.exc_info()[1]) + traceback.format_tb(sys.exc_info()[2]))
 			self.log_f.write(exception_str[:-1])
 		self.log_f.close()
 		super(WaldoMkIII, self).quit()
